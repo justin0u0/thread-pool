@@ -6,6 +6,10 @@ This is a repo containing implementation of thread(worker) pool with unit testin
 - [x] Golang goroutines
 - [ ] std::thread
 
+# Usage
+
+See testing files.
+
 # Testing
 
 Run `make clean && make` first.
