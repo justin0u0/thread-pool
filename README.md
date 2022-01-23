@@ -1,6 +1,6 @@
 # Introduction
 
-This is a repo containing implementation of thread(worker) pool with unit testing.
+This is a repo containing implementations of thread(worker) pool with gracefully shutdown in different languages or different libraries.
 
 - [x] Pthread library
 - [x] Golang goroutines
