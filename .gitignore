@@ -1,0 +1,8 @@
+
+pthread_test
+pthread_test.dSYM/
+
+std_thread_test
+std_thread_test.dSYM/
+
+go_test
