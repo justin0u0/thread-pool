@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#include "pthread/thread_pool.h"
+#include "thread_pool.h"
 
 /**
  * Should print out 4 numbers every 2 seconds and should terminate when

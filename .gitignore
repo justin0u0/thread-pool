@@ -1,8 +1,3 @@
 
-pthread_test
-pthread_test.dSYM/
-
-std_thread_test
-std_thread_test.dSYM/
-
-go_test
+thread_pool_test.dSYM/
+thread_pool_test

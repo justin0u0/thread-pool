@@ -1,7 +1,7 @@
 CXX = g++
 CXXFLAGS = -std=c++11 -O3 -fsanitize=address -g
 LDFLAGS = -pthread
-TARGETS = pthread_test
+TARGETS = pthread/thread_pool_test
 
 .PHONY: all
 all: $(TARGETS)
