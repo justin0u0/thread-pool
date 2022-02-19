@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -45,18 +46,25 @@ func sleepPrint(args ...interface{}) *Result {
 
 var _ = Describe("WorkerPool", func() {
 	var wp *workerPool
+	var numWorkers int
 
 	BeforeEach(func() {
-		wp = NewWorkerPool(4, 1)
+		numWorkers = 4
+		wp = NewWorkerPool(numWorkers, 10)
 	})
 
 	Describe("Start", func() {
 		var ctx context.Context
+		var wg sync.WaitGroup
 
 		JustBeforeEach(func() {
 			close(wp.Tasks())
 
-			wp.Start(ctx)
+			wg.Add(1)
+			go func() {
+				wp.Start(ctx)
+				wg.Done()
+			}()
 		})
 
 		When("done all tasks normally", func() {
@@ -67,10 +75,42 @@ var _ = Describe("WorkerPool", func() {
 			})
 
 			It("should receive results", func() {
+				wg.Wait()
+
 				Expect(wp.Results()).To(Receive(Equal(&Result{
 					Value: 1,
 					Err:   nil,
 				})))
+			})
+		})
+
+		When("gracefully shutdown", func() {
+			var cancel context.CancelFunc
+
+			BeforeEach(func() {
+				ctx, cancel = context.WithCancel(context.Background())
+
+				for i := 0; i < 10; i++ {
+					wp.Tasks() <- &Task{Func: sleepPrint, Args: []interface{}{1, 500 * time.Millisecond}}
+				}
+			})
+
+			JustBeforeEach(func() {
+				time.Sleep(100 * time.Millisecond)
+				cancel()
+			})
+
+			It("should receive 4 results and the result channel closed", func() {
+				wg.Wait()
+
+				for i := 0; i < 4; i++ {
+					Expect(wp.Results()).To(Receive(Equal(&Result{
+						Value: 1,
+						Err:   nil,
+					})))
+				}
+
+				Expect(wp.Results()).To(BeClosed())
 			})
 		})
 	})
