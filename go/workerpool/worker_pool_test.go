@@ -74,43 +74,68 @@ var _ = Describe("WorkerPool", func() {
 				wp.Tasks() <- &Task{Func: sleepPrint, Args: []interface{}{1, time.Millisecond}}
 			})
 
-			It("should receive results", func() {
+			JustBeforeEach(func() {
 				wg.Wait()
+			})
 
+			It("should receive results", func() {
 				Expect(wp.Results()).To(Receive(Equal(&Result{
 					Value: 1,
 					Err:   nil,
 				})))
+				Expect(wp.Results()).To(BeClosed())
 			})
 		})
 
-		When("gracefully shutdown", func() {
+		Context("with cancel", func() {
 			var cancel context.CancelFunc
+			var cancelAfter time.Duration
 
 			BeforeEach(func() {
 				ctx, cancel = context.WithCancel(context.Background())
 
-				for i := 0; i < 10; i++ {
-					wp.Tasks() <- &Task{Func: sleepPrint, Args: []interface{}{1, 500 * time.Millisecond}}
+				for i := 0; i < numWorkers*2; i++ {
+					wp.Tasks() <- &Task{Func: sleepPrint, Args: []interface{}{1, 400 * time.Millisecond}}
 				}
 			})
 
 			JustBeforeEach(func() {
-				time.Sleep(100 * time.Millisecond)
+				time.Sleep(cancelAfter)
 				cancel()
+
+				wg.Wait()
 			})
 
-			It("should receive 4 results and the result channel closed", func() {
-				wg.Wait()
+			When("cancel before all jobs done", func() {
+				BeforeEach(func() {
+					cancelAfter = 50 * time.Millisecond
+				})
 
-				for i := 0; i < 4; i++ {
-					Expect(wp.Results()).To(Receive(Equal(&Result{
-						Value: 1,
-						Err:   nil,
-					})))
-				}
+				It("finishes half of jobs and closes the result channel", func() {
+					for i := 0; i < numWorkers; i++ {
+						Expect(wp.Results()).To(Receive(Equal(&Result{
+							Value: 1,
+							Err:   nil,
+						})))
+					}
+					Expect(wp.Results()).To(BeClosed())
+				})
+			})
 
-				Expect(wp.Results()).To(BeClosed())
+			When("cancel after all jobs done", func() {
+				BeforeEach(func() {
+					cancelAfter = 1 * time.Second
+				})
+
+				It("finishes all jobs and closes the result channel", func() {
+					for i := 0; i < numWorkers*2; i++ {
+						Expect(wp.Results()).To(Receive(Equal(&Result{
+							Value: 1,
+							Err:   nil,
+						})))
+					}
+					Expect(wp.Results()).To(BeClosed())
+				})
 			})
 		})
 	})
